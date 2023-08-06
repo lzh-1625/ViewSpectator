@@ -1,0 +1,9 @@
+main: top.xcon.where.ViewSpectator
+name: ViewSpectator
+version: '1.0'
+description: ?????
+author: Akrike
+api-version: 1.16
+commands:
+  takepicture:
+    description: ?????
