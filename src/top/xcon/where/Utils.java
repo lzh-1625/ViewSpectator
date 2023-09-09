@@ -2,8 +2,10 @@ package top.xcon.where;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import sun.misc.BASE64Encoder;
 
 import java.awt.*;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -493,5 +495,10 @@ public class Utils {
 			return new Color(redColor, greenColor, blueColor);
 		}
 		return new Color(0,0,0); // no color was found, use gray
+	}
+
+	public static String getImageString(byte[] data) throws IOException {
+		BASE64Encoder encoder = new BASE64Encoder();
+		return data != null ? encoder.encode(data) : "";
 	}
 }

@@ -3,8 +3,10 @@ package top.xcon.where;
 import com.sun.net.httpserver.HttpServer;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+import top.xcon.where.commands.Command;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class ViewSpectator extends JavaPlugin {
 
@@ -22,6 +24,7 @@ public class ViewSpectator extends JavaPlugin {
 			e.printStackTrace();
 		}
 		Utils.loadColors();
+		Objects.requireNonNull(this.getCommand("takepicture")).setExecutor(new Command());
 
 	}
 
