@@ -22,15 +22,15 @@ public class Picture {
     private Player player;
     private ViewSpectator instance = ViewSpectator.getInstance();
 
-    public  byte[] takePictureFile(Player p) throws IOException, ExecutionException, InterruptedException {
-	    player=p;
+    public byte[] takePictureFile(Player p) throws IOException, ExecutionException, InterruptedException {
+        player = p;
         BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
         int[][] result = scheduler.callSyncMethod(instance, this::performTask).get();
         BufferedImage image = new BufferedImage(912, 512, BufferedImage.TYPE_INT_RGB);
         for (int x = 0; x < 228; x++) {
             for (int y = 0; y < 128; y++) {
-                for(int xi=0;xi<4;xi++){
-                    for(int yi=0;yi<4;yi++) {
+                for (int xi = 0; xi < 4; xi++) {
+                    for (int yi = 0; yi < 4; yi++) {
                         image.setRGB(x * 4 + xi, y * 4 + yi, result[x][y]);
                     }
                 }
@@ -62,7 +62,30 @@ public class Picture {
                 double xrotate = ((x) * 1.6 / 228 - .45);
                 Vector rayTraceVector = new Vector(Math.cos(yaw + xrotate) * Math.cos(pitch + yrotate),
                         Math.sin(pitch + yrotate), Math.sin(yaw + xrotate) * Math.cos(pitch + yrotate));
-                RayTraceResult result = player.getWorld().rayTraceBlocks(eyes, rayTraceVector, 256);
+
+                RayTraceResult blockResult = player.getWorld().rayTraceBlocks(eyes, rayTraceVector, 256);
+
+                Location eyeLocation = player.getEyeLocation();
+                RayTraceResult entityResult = player.getWorld().rayTraceEntities(eyeLocation.add(rayTraceVector), rayTraceVector, 256);
+                if (entityResult != null && entityResult.getHitEntity() != null && !(blockResult != null && blockResult.getHitBlock() != null && eyes.distance(entityResult.getHitEntity().getLocation()) > eyes.distance(blockResult.getHitBlock().getLocation()))) {
+
+                    if (entityResult.getHitEntity() instanceof Player) {
+                        if (y % 2 == 0) {
+                            data[x][y] = new Color(204, 102, 0).getRGB();
+                        } else {
+                            data[x][y] = new Color(255, 255, 255).getRGB();
+                        }
+                    } else {
+                        if (y % 2 == 0) {
+                            data[x][y] = new Color(238, 99, 99).getRGB();
+                        } else {
+                            data[x][y] = new Color(255, 255, 255).getRGB();
+                        }
+                    }
+                    continue;
+                }
+
+
                 // Color change for liquids
                 RayTraceResult liquidResult = player.getWorld().rayTraceBlocks(eyes, rayTraceVector, 256,
                         FluidCollisionMode.ALWAYS, false);
@@ -76,8 +99,8 @@ public class Picture {
                     }
                 }
 
-                if (result != null) {
-                    byte lightLevel = result.getHitBlock().getRelative(result.getHitBlockFace()).getLightLevel();
+                if (blockResult != null) {
+                    byte lightLevel = blockResult.getHitBlock().getRelative(blockResult.getHitBlockFace()).getLightLevel();
                     if (lightLevel > 0 && shadows) {
                         double shadowLevel = 15.0;
                         for (int i = 0; i < dye.length; i++) {
@@ -85,21 +108,21 @@ public class Picture {
                         }
                     }
                     if (transparentWater) {
-                        int rgb=Utils.getColorFromType(result.getHitBlock(), dye).getRGB();
-                        data[x][y]=rgb;
+                        int rgb = Utils.getColorFromType(blockResult.getHitBlock(), dye).getRGB();
+                        data[x][y] = rgb;
 
                     } else {
-                        int rgb=Utils.getColorFromType(liquidResult.getHitBlock(), dye).getRGB();
-                        data[x][y]=rgb;
+                        int rgb = Utils.getColorFromType(liquidResult.getHitBlock(), dye).getRGB();
+                        data[x][y] = rgb;
                     }
                 } else if (liquidResult != null) {
-                    int rgb= Utils.getColorFromType(liquidResult.getHitBlock(), new double[]{1, 1, 1}).getRGB();
-                    data[x][y]=rgb;
+                    int rgb = Utils.getColorFromType(liquidResult.getHitBlock(), new double[]{1, 1, 1}).getRGB();
+                    data[x][y] = rgb;
 
                     // set map pixel to color of liquid block found
                 } else {
-                    int rgb= new Color(51, 153, 255).getRGB();
-                    data[x][y]=rgb;
+                    int rgb = new Color(51, 153, 255).getRGB();
+                    data[x][y] = rgb;
 
                     // no block was hit, so we will assume we are looking at the sky
                 }

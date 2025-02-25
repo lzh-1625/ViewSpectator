@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Player View</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 全屏样式 */
+        .fullscreen {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background-color: rgba(0, 0, 0, 0.9);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+        }
+
+        .fullscreen img {
+          max-width: 100%;
+          max-height: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+<div class="bg-white p-6 w-3/4 rounded-lg shadow-lg text-center">
+    <h1 class="text-xl font-bold mb-4">Player List Image</h1>
+
+    <!-- Token 输入框 -->
+    <div class="mb-4">
+        <label for="tokenInput" class="block text-gray-700 font-semibold">Enter Token:</label>
+        <input
+                type="text"
+                id="tokenInput"
+                class="mt-2 p-2 border border-gray-300 rounded-md w-full"
+                placeholder="Enter your token"
+        />
+    </div>
+
+    <!-- 选择器 -->
+    <div class="mb-4">
+        <label for="playerSelect" class="block text-gray-700 font-semibold">Choose Player:</label>
+        <select
+                id="playerSelect"
+                class="mt-2 p-2 border border-gray-300 rounded-md w-full"
+        >
+            <option value="" disabled selected>Loading players...</option>
+        </select>
+    </div>
+
+    <!-- 显示图像 -->
+    <div class="mb-4">
+        <img
+                id="playerImage"
+                class="w-full max-w-1/2 h-auto rounded-lg shadow-md mx-auto cursor-pointer"
+                alt="Player Image"
+                onclick="toggleFullscreen()"
+        />
+    </div>
+
+    <!-- 控制按钮 -->
+    <button
+            id="startAutoUpdate"
+            class="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+    >
+        Start Auto Update
+    </button>
+</div>
+
+<script>
+    let updateInterval;
+
+    // Fetch player names
+    async function fetchPlayerNames(token) {
+      try {
+        const response = await fetch("/player/list", {
+          method: "GET",
+          headers: {
+            token: token, // 添加请求头
+          },
+        });
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        const playerNames = await response.json(); // 获取玩家名字列表
+        const select = document.getElementById("playerSelect");
+        select.innerHTML = ""; // 清空现有选项
+
+        // 添加默认提示
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.text = "Select a Player";
+        select.appendChild(defaultOption);
+
+        // 填充玩家名字选项
+        playerNames.forEach((player) => {
+          const option = document.createElement("option");
+          option.value = player; // 假设每个玩家有 id 字段
+          option.text = player; // 假设每个玩家有 name 字段
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error fetching player names:", error);
+      }
+    }
+
+    // Fetch player image
+    async function fetchPlayerImage(player, token) {
+      try {
+        const response = await fetch(`/picture?player=${player}`, {
+          method: "GET",
+          headers: {
+            token: token, // 添加请求头
+          },
+        });
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+
+        const blob = await response.blob(); // 获取二进制数据
+        const url = URL.createObjectURL(blob); // 创建图像 URL
+        const imageElement = document.getElementById("playerImage");
+        imageElement.src = url; // 设置图像的 src 属性
+      } catch (error) {
+        console.error("Error fetching player image:", error);
+      }
+    }
+
+    // 更新图像定时器
+    function startAutoUpdate(player, token) {
+      updateInterval = setInterval(() => {
+        fetchPlayerImage(player, token);
+      }, 500); // 每 5 秒更新一次
+    }
+
+    // 停止自动更新
+    function stopAutoUpdate() {
+      if (updateInterval) {
+        clearInterval(updateInterval);
+      }
+    }
+
+    // 切换全屏
+    function toggleFullscreen() {
+      const imgElement = document.getElementById("playerImage");
+      const fullScreenDiv = document.createElement("div");
+      fullScreenDiv.className = "fullscreen";
+      fullScreenDiv.onclick = () => {
+        document.body.removeChild(fullScreenDiv);
+      };
+      const fullScreenImg = document.createElement("img");
+      fullScreenImg.src = imgElement.src;
+      fullScreenDiv.appendChild(fullScreenImg);
+      document.body.appendChild(fullScreenDiv);
+    }
+
+    // 页面加载时初始化
+    document.addEventListener("DOMContentLoaded", () => {
+      const tokenInput = document.getElementById("tokenInput");
+      const playerSelect = document.getElementById("playerSelect");
+
+      // 读取本地存储并设置 token 输入框值
+      const storedToken = localStorage.getItem("playerToken");
+      if (storedToken) {
+        tokenInput.value = storedToken;
+        fetchPlayerNames(storedToken); // 使用 token 获取玩家名字列表
+      }
+
+      // 选择器变化时更新图像
+      playerSelect.addEventListener("change", () => {
+        const player = playerSelect.value;
+        const token = tokenInput.value.trim();
+        if (player && token) {
+          fetchPlayerImage(player, token);
+          stopAutoUpdate(); // 选择新玩家时停止自动更新
+        }
+      });
+
+      // 启动自动更新功能
+      const startButton = document.getElementById("startAutoUpdate");
+      startButton.addEventListener("click", () => {
+        const player = playerSelect.value;
+        const token = tokenInput.value.trim();
+        if (player && token) {
+          startAutoUpdate(player, token); // 启动定时更新
+        } else {
+          alert("Please select a player and enter a valid token.");
+        }
+      });
+
+      // 定时请求玩家名称
+      tokenInput.addEventListener("input", (event) => {
+        const token = event.target.value.trim();
+        localStorage.setItem("playerToken", token); // 保存 token 到本地存储
+        if (token) {
+          fetchPlayerNames(token); // 使用 token 获取玩家名字列表
+        }
+      });
+    });
+</script>
+</body>
+</html>
