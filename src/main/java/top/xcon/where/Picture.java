@@ -51,7 +51,7 @@ public class Picture {
         Location eyes = player.getEyeLocation();
         int[][] data = new int[228][128];
         double pitch = -Math.toRadians(player.getEyeLocation().getPitch());
-        double yaw = Math.toRadians(player.getEyeLocation().getYaw() + 90);
+        double yaw = Math.toRadians(player.getEyeLocation().getYaw() + 70);
         boolean transparentWater = true;
         boolean shadows = true;
         for (int x = 0; x < 228; x++) {
